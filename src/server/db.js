@@ -7,8 +7,12 @@ const cache = (globalThis.__tutorhubDb ??= { promise: null, memoryServer: null }
 
 async function connect() {
   let uri = process.env.MONGO_URI;
+  if (!uri && process.env.NODE_ENV === 'production') {
+    // On serverless hosts (Vercel) every instance would get its own throwaway in-memory DB.
+    throw new Error('MONGO_URI is not set. Add it to your deployment environment variables.');
+  }
   if (!uri) {
-    // No database configured: spin up an in-memory MongoDB so the app runs out of the box.
+    // No database configured (local dev): spin up an in-memory MongoDB so the app runs out of the box.
     const { MongoMemoryServer } = await import('mongodb-memory-server');
     cache.memoryServer = await MongoMemoryServer.create();
     uri = cache.memoryServer.getUri('tutorhub');
